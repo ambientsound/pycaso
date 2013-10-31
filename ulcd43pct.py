@@ -5,6 +5,7 @@ class Display(object):
 
     ser = None
     serial_port = None
+    serial_speed = 9600
 
     ACK = '\x06'
     ERR = '\x15'
@@ -27,6 +28,9 @@ class Display(object):
 
     def set_serial_port(self, serial_port):
         self.serial_port = serial_port
+
+    def set_serial_speed(self, serial_speed):
+        self.serial_speed = serial_speed
 
     def get_ack(self):
         """
@@ -62,7 +66,7 @@ class Display(object):
             raise Exception("Serial port already open.")
         self.ser = serial.Serial(self.serial_port)
         self.ser.open()
-        self.ser.setBaudrate(9600)
+        self.ser.setBaudrate(self.serial_speed)
         self.ser.setParity('N')
         self.ser.setByteSize(8)
         self.ser.setStopbits(1)
@@ -102,6 +106,29 @@ class Display(object):
     def gfx_BackgroundColour(self, colour):
         buf = self.BACKGROUND_COLOUR + self.pack_word(colour)
         return self.write_recv_word(buf)
+
+
+    ####################################################
+    ###  5.4: Serial (UART) Communications Commands  ###
+    ####################################################
+
+    SET_BAUD_RATE = '\x00\x26'
+
+    def setbaudWait(self, baudrate):
+        if baudrate == 110:
+            index = 0
+        elif baudrate == 9600:
+            index = 6
+        elif baudrate == 115200:
+            index = 13
+        else:
+            raise Exception("Unsupported baud rate.")
+        self.ser.write(self.SET_BAUD_RATE + self.pack_word(index))
+        self.ser.flush()
+        self.ser.setBaudrate(baudrate)
+        self.serial_speed = baudrate
+        self.ser.flushInput()
+        return self.get_ack()
 
 
     #############################

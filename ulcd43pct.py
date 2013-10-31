@@ -95,6 +95,7 @@ class Display(object):
     CLEAR_SCREEN = '\xff\xcd'
     CHANGE_COLOUR = '\xff\xb4'
     BACKGROUND_COLOUR = '\xff\xa4'
+    CONTRAST = '\xff\x9c'
 
     def gfx_Cls(self):
         return self.write_recv(self.CLEAR_SCREEN)
@@ -105,6 +106,15 @@ class Display(object):
 
     def gfx_BackgroundColour(self, colour):
         buf = self.BACKGROUND_COLOUR + self.pack_word(colour)
+        return self.write_recv_word(buf)
+
+    def gfx_Contrast(self, contrast):
+        """
+        From the documentation:
+        uLCD-43 supports Contrast values from 1-15 and 0 to turn the Display off.
+        """
+        contrast &= 15
+        buf = self.CONTRAST + self.pack_word(contrast)
         return self.write_recv_word(buf)
 
 

@@ -79,6 +79,11 @@ class DisplayTestCase(unittest.TestCase):
         self.assertEqual(self.display.setbaudWait(115200), True)
         self.assertEqual(self.display.setbaudWait(self.serial_speed), True)
 
+    def testContrast(self):
+        self.display.gfx_Contrast(0)
+        time.sleep(1)
+        self.assertEqual(0, self.display.gfx_Contrast(15))
+
 
 if __name__ == "__main__":
     unittest.main()

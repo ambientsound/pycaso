@@ -7,9 +7,14 @@ import ulcd43pct as lcd
 
 class DisplayTestCase(unittest.TestCase):
 
+    BLACK = 0
+    RED   = 0b11111 << 11
+    GREEN = 0b111111 << 5
+    BLUE  = 0b11111
+
     def setUp(self):
         self.serial_port = os.getenv('PYCASO_SERIAL_PORT')
-        self.serial_speed = int(os.getenv('PYCASO_SERIAL_SPEED'))
+        self.serial_speed = int(os.getenv('PYCASO_SERIAL_SPEED', 9600))
         if not self.serial_port:
             raise Exception('Please set the PYCASO_SERIAL_PORT environment variable to run the tests.')
         if not self.serial_speed:
@@ -31,42 +36,42 @@ class DisplayTestCase(unittest.TestCase):
         model = self.display.sys_GetModel()
         self.assertEqual('uLCD-43', model[:7])
 
+    def testCircle(self):
+        MAX = 240
+        for rad, color in ((0, self.RED), (1, self.GREEN), (2, self.BLUE)):
+            while rad < MAX:
+                self.assertTrue(self.display.gfx_Circle(240, 140, rad, color))
+                rad += 3
+
     def testChangeColour(self):
         self.assertTrue(self.display.gfx_ChangeColour(0, 65535))
         self.assertTrue(self.display.gfx_ChangeColour(65535, 0))
 
     def testBackgroundColor(self):
-        black = 0
-        red   = 0b11111 << 11
-        green = 0b111111 << 5
-        blue  = 0b11111
-        self.display.gfx_BackgroundColour(black)
+        self.display.gfx_BackgroundColour(self.BLACK)
         self.assertEqual(self.display.gfx_Cls(), True)
-        self.assertEqual(black, self.display.gfx_BackgroundColour(red))
+        self.assertEqual(self.BLACK, self.display.gfx_BackgroundColour(self.RED))
         self.assertEqual(self.display.gfx_Cls(), True)
         time.sleep(0.25)
-        self.assertEqual(red, self.display.gfx_BackgroundColour(green))
+        self.assertEqual(self.RED, self.display.gfx_BackgroundColour(self.GREEN))
         self.assertEqual(self.display.gfx_Cls(), True)
         time.sleep(0.25)
-        self.assertEqual(green, self.display.gfx_BackgroundColour(blue))
+        self.assertEqual(self.GREEN, self.display.gfx_BackgroundColour(self.BLUE))
         self.assertEqual(self.display.gfx_Cls(), True)
         time.sleep(0.25)
-        self.assertEqual(blue, self.display.gfx_BackgroundColour(black))
+        self.assertEqual(self.BLUE, self.display.gfx_BackgroundColour(self.BLACK))
 
     def testBackgroundColorCycle(self):
-        red   = 0b11111 << 11
-        green = 0b111111 << 5
-        blue  = 0b11111
         r = g = b = 0
-        while r <= red:
+        while r <= self.RED:
             self.display.gfx_BackgroundColour(r)
             self.display.gfx_Cls()
             r += (1 << 11)
-        while g <= green:
+        while g <= self.GREEN:
             self.display.gfx_BackgroundColour(g)
             self.display.gfx_Cls()
             g += (1 << 6)
-        while b <= blue:
+        while b <= self.BLUE:
             self.display.gfx_BackgroundColour(b)
             self.display.gfx_Cls()
             b += 1

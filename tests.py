@@ -75,6 +75,17 @@ class DisplayTestCase(unittest.TestCase):
         self.assertTrue(self.display.gfx_PolygonFilled(self.RED, (100, 100), (150, 150), (100, 200)))
         time.sleep(0.5)
 
+    def testTriangle(self):
+        self.assertTrue(self.display.gfx_Triangle((100, 100), (150, 150), (100, 200), self.GREEN))
+        time.sleep(0.5)
+
+    def testTriangleFilled(self):
+        self.assertTrue(self.display.gfx_TriangleFilled((100, 100), (150, 150), (100, 200), self.GREEN))
+        time.sleep(0.5)
+
+    def testOrbit(self):
+        self.assertEquals(self.display.gfx_Orbit(40, 60), (45, 37))
+
     def testChangeColour(self):
         self.assertTrue(self.display.gfx_ChangeColour(0, 65535))
         self.assertTrue(self.display.gfx_ChangeColour(65535, 0))

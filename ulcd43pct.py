@@ -130,6 +130,9 @@ class Display(object):
     POLYLINE = '\x00\x15'
     POLYGON = '\x00\x13'
     POLYGON_FILLED = '\x00\x14'
+    TRIANGLE = '\xff\xbf'
+    TRIANGLE_FILLED = '\xff\xa9'
+    ORBIT = '\x00\x12'
     BACKGROUND_COLOUR = '\xff\xa4'
     CONTRAST = '\xff\x9c'
 
@@ -167,6 +170,16 @@ class Display(object):
             raise Exception('gfx_PolygonFilled needs at least 3 points.')
         points = [x for x,y in args] + [y for x,y in args] + [colour]
         return self.send_args_ack(self.POLYGON_FILLED, len(points)/2, *points)
+
+    def gfx_Triangle(self, point1, point2, point3, colour):
+        return self.send_args_ack(self.TRIANGLE, point1[0], point1[1], point2[0], point2[1], point3[0], point3[1], colour)
+
+    def gfx_TriangleFilled(self, point1, point2, point3, colour):
+        return self.send_args_ack(self.TRIANGLE_FILLED, point1[0], point1[1], point2[0], point2[1], point3[0], point3[1], colour)
+
+    def gfx_Orbit(self, angle, distance):
+        self.send_args_ack(self.ORBIT, angle, distance)
+        return struct.unpack('>HH', self.ser.read(4))
 
     def gfx_BackgroundColour(self, colour):
         return self.send_args_recv_word(self.BACKGROUND_COLOUR, colour)

@@ -40,27 +40,27 @@ class DisplayTestCase(unittest.TestCase):
         MAX = 240
         for rad, color in ((0, self.RED), (1, self.GREEN), (2, self.BLUE)):
             while rad < MAX:
-                self.assertTrue(self.display.gfx_Circle(240, 140, rad, color))
+                self.assertTrue(self.display.gfx_Circle((240, 140), rad, color))
                 rad += 3
 
     def testCircleFilled(self):
         for rad, color in ((240, self.RED), (180, self.GREEN), (120, self.BLUE)):
-            self.assertTrue(self.display.gfx_CircleFilled(240, 140, rad, color))
+            self.assertTrue(self.display.gfx_CircleFilled((240, 140), rad, color))
             time.sleep(0.33)
 
     def testLine(self):
-        self.assertTrue(self.display.gfx_Line(0, 0, 479, 271, self.GREEN))
-        self.assertTrue(self.display.gfx_Line(0, 271, 479, 0, self.RED))
+        self.assertTrue(self.display.gfx_Line((0, 0), (479, 271), self.GREEN))
+        self.assertTrue(self.display.gfx_Line((0, 271), (479, 0), self.RED))
         time.sleep(0.5)
 
     def testRectangle(self):
-        self.assertTrue(self.display.gfx_Rectangle(0, 0, 479, 135, self.GREEN))
-        self.assertTrue(self.display.gfx_Rectangle(0, 138, 479, 271, self.RED))
+        self.assertTrue(self.display.gfx_Rectangle((0, 0), (479, 135), self.GREEN))
+        self.assertTrue(self.display.gfx_Rectangle((0, 138), (479, 271), self.RED))
         time.sleep(0.5)
 
     def testRectangleFilled(self):
-        self.assertTrue(self.display.gfx_RectangleFilled(0, 0, 479, 135, self.BLUE))
-        self.assertTrue(self.display.gfx_RectangleFilled(0, 138, 479, 271, self.RED))
+        self.assertTrue(self.display.gfx_RectangleFilled((0, 0), (479, 135), self.BLUE))
+        self.assertTrue(self.display.gfx_RectangleFilled((0, 138), (479, 271), self.RED))
         time.sleep(0.5)
 
     def testPolyline(self):

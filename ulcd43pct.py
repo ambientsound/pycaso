@@ -139,20 +139,20 @@ class Display(object):
     def gfx_ChangeColour(self, old_colour, new_colour):
         return self.send_args_ack(self.CHANGE_COLOUR, old_colour, new_colour)
 
-    def gfx_Circle(self, x, y, rad, colour):
-        return self.send_args_ack(self.CIRCLE, x, y, rad, colour)
+    def gfx_Circle(self, point, rad, colour):
+        return self.send_args_ack(self.CIRCLE, point[0], point[1], rad, colour)
 
-    def gfx_CircleFilled(self, x, y, rad, colour):
-        return self.send_args_ack(self.CIRCLE_FILLED, x, y, rad, colour)
+    def gfx_CircleFilled(self, point, rad, colour):
+        return self.send_args_ack(self.CIRCLE_FILLED, point[0], point[1], rad, colour)
 
-    def gfx_Line(self, x1, y1, x2, y2, colour):
-        return self.send_args_ack(self.LINE, x1, y1, x2, y2, colour)
+    def gfx_Line(self, point1, point2, colour):
+        return self.send_args_ack(self.LINE, point1[0], point1[1], point2[0], point2[1], colour)
 
-    def gfx_Rectangle(self, x1, y1, x2, y2, colour):
-        return self.send_args_ack(self.RECTANGLE, x1, y1, x2, y2, colour)
+    def gfx_Rectangle(self, point1, point2, colour):
+        return self.send_args_ack(self.RECTANGLE, point1[0], point1[1], point2[0], point2[1], colour)
 
-    def gfx_RectangleFilled(self, x1, y1, x2, y2, colour):
-        return self.send_args_ack(self.RECTANGLE_FILLED, x1, y1, x2, y2, colour)
+    def gfx_RectangleFilled(self, point1, point2, colour):
+        return self.send_args_ack(self.RECTANGLE_FILLED, point1[0], point1[1], point2[0], point2[1], colour)
 
     def gfx_Polyline(self, colour, *args):
         points = [x for x,y in args] + [y for x,y in args] + [colour]

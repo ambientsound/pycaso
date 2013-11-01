@@ -125,6 +125,11 @@ class Display(object):
     CIRCLE = '\xff\xc3'
     CIRCLE_FILLED = '\xff\xc2'
     LINE = '\xff\xc8'
+    RECTANGLE = '\xff\xc5'
+    RECTANGLE_FILLED = '\xff\xc4'
+    POLYLINE = '\x00\x15'
+    POLYGON = '\x00\x13'
+    POLYGON_FILLED = '\x00\x14'
     BACKGROUND_COLOUR = '\xff\xa4'
     CONTRAST = '\xff\x9c'
 
@@ -142,6 +147,26 @@ class Display(object):
 
     def gfx_Line(self, x1, y1, x2, y2, colour):
         return self.send_args_ack(self.LINE, x1, y1, x2, y2, colour)
+
+    def gfx_Rectangle(self, x1, y1, x2, y2, colour):
+        return self.send_args_ack(self.RECTANGLE, x1, y1, x2, y2, colour)
+
+    def gfx_RectangleFilled(self, x1, y1, x2, y2, colour):
+        return self.send_args_ack(self.RECTANGLE_FILLED, x1, y1, x2, y2, colour)
+
+    def gfx_Polyline(self, colour, *args):
+        points = [x for x,y in args] + [y for x,y in args] + [colour]
+        return self.send_args_ack(self.POLYLINE, len(points)/2, *points)
+
+    def gfx_Polygon(self, colour, *args):
+        points = [x for x,y in args] + [y for x,y in args] + [colour]
+        return self.send_args_ack(self.POLYGON, len(points)/2, *points)
+
+    def gfx_PolygonFilled(self, colour, *args):
+        if len(args) < 3:
+            raise Exception('gfx_PolygonFilled needs at least 3 points.')
+        points = [x for x,y in args] + [y for x,y in args] + [colour]
+        return self.send_args_ack(self.POLYGON_FILLED, len(points)/2, *points)
 
     def gfx_BackgroundColour(self, colour):
         return self.send_args_recv_word(self.BACKGROUND_COLOUR, colour)

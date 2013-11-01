@@ -49,8 +49,30 @@ class DisplayTestCase(unittest.TestCase):
             time.sleep(0.33)
 
     def testLine(self):
-        self.assertTrue(self.display.gfx_Line(0, 0, 480, 272, self.GREEN))
-        self.assertTrue(self.display.gfx_Line(0, 272, 480, 0, self.RED))
+        self.assertTrue(self.display.gfx_Line(0, 0, 479, 271, self.GREEN))
+        self.assertTrue(self.display.gfx_Line(0, 271, 479, 0, self.RED))
+        time.sleep(0.5)
+
+    def testRectangle(self):
+        self.assertTrue(self.display.gfx_Rectangle(0, 0, 479, 135, self.GREEN))
+        self.assertTrue(self.display.gfx_Rectangle(0, 138, 479, 271, self.RED))
+        time.sleep(0.5)
+
+    def testRectangleFilled(self):
+        self.assertTrue(self.display.gfx_RectangleFilled(0, 0, 479, 135, self.BLUE))
+        self.assertTrue(self.display.gfx_RectangleFilled(0, 138, 479, 271, self.RED))
+        time.sleep(0.5)
+
+    def testPolyline(self):
+        self.assertTrue(self.display.gfx_Polyline(self.GREEN, (50, 50), (100, 100), (50, 150), (100, 200), (150, 150), (200, 200)))
+        time.sleep(0.5)
+
+    def testPolygon(self):
+        self.assertTrue(self.display.gfx_Polygon(self.RED, (100, 100), (150, 150), (100, 200)))
+        time.sleep(0.5)
+
+    def testPolygonFilled(self):
+        self.assertTrue(self.display.gfx_PolygonFilled(self.RED, (100, 100), (150, 150), (100, 200)))
         time.sleep(0.5)
 
     def testChangeColour(self):

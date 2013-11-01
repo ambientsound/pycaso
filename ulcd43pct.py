@@ -108,6 +108,7 @@ class Display(object):
     CLEAR_SCREEN = '\xff\xcd'
     CHANGE_COLOUR = '\xff\xb4'
     CIRCLE = '\xff\xc3'
+    CIRCLE_FILLED = '\xff\xc2'
     BACKGROUND_COLOUR = '\xff\xa4'
     CONTRAST = '\xff\x9c'
 
@@ -120,6 +121,10 @@ class Display(object):
 
     def gfx_Circle(self, x, y, rad, colour):
         buf = self.CIRCLE + self.pack_word(x) + self.pack_word(y) + self.pack_word(rad) + self.pack_word(colour)
+        return self.write_recv(buf)
+
+    def gfx_CircleFilled(self, x, y, rad, colour):
+        buf = self.CIRCLE_FILLED + self.pack_word(x) + self.pack_word(y) + self.pack_word(rad) + self.pack_word(colour)
         return self.write_recv(buf)
 
     def gfx_BackgroundColour(self, colour):

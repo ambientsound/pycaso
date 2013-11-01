@@ -43,6 +43,11 @@ class DisplayTestCase(unittest.TestCase):
                 self.assertTrue(self.display.gfx_Circle(240, 140, rad, color))
                 rad += 3
 
+    def testCircleFilled(self):
+        for rad, color in ((240, self.RED), (180, self.GREEN), (120, self.BLUE)):
+            self.assertTrue(self.display.gfx_CircleFilled(240, 140, rad, color))
+            time.sleep(0.33)
+
     def testChangeColour(self):
         self.assertTrue(self.display.gfx_ChangeColour(0, 65535))
         self.assertTrue(self.display.gfx_ChangeColour(65535, 0))

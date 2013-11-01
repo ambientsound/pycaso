@@ -32,7 +32,7 @@ class Display(object):
     def set_serial_speed(self, serial_speed):
         self.serial_speed = serial_speed
 
-    def discover_serial_speed(self):
+    def detect_serial_speed(self):
         self.ser.setTimeout(0)
         for index, rate in self.BAUD_RATE_INDEX:
             self.ser.setBaudrate(rate)
@@ -42,7 +42,6 @@ class Display(object):
                     self.serial_speed = rate
                     return rate
             except:
-                print 'failed', rate
                 pass
         raise Exception('No match in any baud rate')
 
@@ -177,3 +176,31 @@ class Display(object):
     def sys_GetModel(self):
         c = self.write_recv_word(self.GET_DISPLAY_MODEL)
         return self.ser.read(c)
+
+
+
+# Detect baud rate and set to max
+
+if __name__ == "__main__":
+    import os
+    d = Display()
+    d.set_serial_port(os.getenv('PYCASO_SERIAL_PORT'))
+    d.set_serial_speed(int(os.getenv('PYCASO_SERIAL_SPEED', 9600)))
+    d.connect()
+    try:
+        speed = d.detect_serial_speed()
+        target = 115200
+    except:
+        print "Device doesn't seem to be responding. Try running detection again."
+        exit(1)
+    print "Device running at %d baud" % speed
+    if speed != target:
+        print "Switching to %d baud" % target
+        if d.setbaudWait(target):
+            print "Device running at %d baud" % speed
+            print "export PYCASO_SERIAL_SPEED=%d" % target
+            exit(0)
+        print "Device doesn't seem to be responding. Try running detection again."
+        exit(1)
+    print "export PYCASO_SERIAL_SPEED=%d" % target
+    exit(0)

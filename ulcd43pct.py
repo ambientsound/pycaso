@@ -32,6 +32,20 @@ class Display(object):
     def set_serial_speed(self, serial_speed):
         self.serial_speed = serial_speed
 
+    def discover_serial_speed(self):
+        self.ser.setTimeout(0)
+        for index, rate in self.BAUD_RATE_INDEX:
+            self.ser.setBaudrate(rate)
+            self.ser.flushInput()
+            try:
+                if self.sys_GetModel():
+                    self.serial_speed = rate
+                    return rate
+            except:
+                print 'failed', rate
+                pass
+        raise Exception('No match in any baud rate')
+
     def get_ack(self):
         """
         Returns True if serial response was an ACK reply, False if not.
@@ -123,22 +137,25 @@ class Display(object):
     ####################################################
 
     SET_BAUD_RATE = '\x00\x26'
+    BAUD_RATE_INDEX = [ (0, 110), (1, 300), (2, 600), (3, 1200), (4, 2400),
+        (5, 4800), (6, 9600), (7, 14400), (8, 19200), (9, 31250), (10, 38400),
+        (11, 56000), (12, 57600), (13, 115200), (14, 128000), (15, 256000),
+        (16, 300000), (17, 375000), (18, 500000), (19, 600000) ]
+    SUPPORTED_BAUD_RATES = [ 50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800,
+            2400, 4800, 9600, 19200, 38400, 57600, 115200 ]
 
     def setbaudWait(self, baudrate):
-        if baudrate == 110:
-            index = 0
-        elif baudrate == 9600:
-            index = 6
-        elif baudrate == 115200:
-            index = 13
-        else:
-            raise Exception("Unsupported baud rate.")
-        self.ser.write(self.SET_BAUD_RATE + self.pack_word(index))
-        self.ser.flush()
-        self.ser.setBaudrate(baudrate)
-        self.serial_speed = baudrate
-        self.ser.flushInput()
-        return self.get_ack()
+        for index, rate in self.BAUD_RATE_INDEX:
+            if rate == baudrate:
+                if rate not in self.SUPPORTED_BAUD_RATES:
+                    raise Exception('Baud rate is supported by device, but probably not by OS.')
+                self.ser.write(self.SET_BAUD_RATE + self.pack_word(index))
+                self.ser.flush()
+                self.ser.setBaudrate(baudrate)
+                self.serial_speed = baudrate
+                self.ser.flushInput()
+                return self.get_ack()
+        raise Exception("Unsupported baud rate.")
 
 
     #############################

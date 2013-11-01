@@ -75,8 +75,10 @@ class DisplayTestCase(unittest.TestCase):
         self.assertEqual(self.display.sys_Sleep(2), 0)
 
     def testSetBaudWait(self):
-        self.assertEqual(self.display.setbaudWait(110), True)
-        self.assertEqual(self.display.setbaudWait(115200), True)
+        for index, baudrate in self.display.BAUD_RATE_INDEX:
+            if not baudrate in self.display.SUPPORTED_BAUD_RATES:
+                continue
+            self.assertEqual(self.display.setbaudWait(baudrate), True)
         self.assertEqual(self.display.setbaudWait(self.serial_speed), True)
 
     def testContrast(self):

@@ -57,20 +57,35 @@ class Display(object):
             return False
         raise Exception("Unknown reply: '%s'" % ack.encode('hex'))
 
-    def write_recv(self, buf, return_bytes = 0):
+    def send_ack(self, buf):
         """
-        Write buffer to serial device, check for ACK, and return more data if available.
+        Write buffer to serial device and check for ACK. Throws an exception if ACK is not received.
         """
         assert self.ser.write(buf) == len(buf)
         self.ser.flush()
         if not self.get_ack():
             raise Exception('Command error, received ERR')
-        if return_bytes <= 0:
-            return True
-        return self.ser.read(return_bytes)
+        return True
 
-    def write_recv_word(self, buf):
-        return self.unpack_word(self.write_recv(buf, 2))
+    def recv_word(self):
+        """
+        Return a WORD value from serial.
+        """
+        return self.unpack_word(self.ser.read(2))
+
+    def send_args_ack(self, buf, *args):
+        """
+        Send buf along with the WORDs in args, expecting an ACK response.
+        """
+        buf += ''.join([self.pack_word(x) for x in args])
+        return self.send_ack(buf)
+
+    def send_args_recv_word(self, buf, *args):
+        """
+        Send buf along with the WORDs in args, expecting an ACK response and a WORD.
+        """
+        self.send_args_ack(buf, *args)
+        return self.recv_word()
 
     def connect(self):
         if not self.serial_port:
@@ -114,27 +129,22 @@ class Display(object):
     CONTRAST = '\xff\x9c'
 
     def gfx_Cls(self):
-        return self.write_recv(self.CLEAR_SCREEN)
+        return self.send_ack(self.CLEAR_SCREEN)
 
     def gfx_ChangeColour(self, old_colour, new_colour):
-        buf = self.CHANGE_COLOUR + self.pack_word(old_colour) + self.pack_word(new_colour)
-        return self.write_recv(buf)
+        return self.send_args_ack(self.CHANGE_COLOUR, old_colour, new_colour)
 
     def gfx_Circle(self, x, y, rad, colour):
-        buf = self.CIRCLE + self.pack_word(x) + self.pack_word(y) + self.pack_word(rad) + self.pack_word(colour)
-        return self.write_recv(buf)
+        return self.send_args_ack(self.CIRCLE, x, y, rad, colour)
 
     def gfx_CircleFilled(self, x, y, rad, colour):
-        buf = self.CIRCLE_FILLED + self.pack_word(x) + self.pack_word(y) + self.pack_word(rad) + self.pack_word(colour)
-        return self.write_recv(buf)
+        return self.send_args_ack(self.CIRCLE_FILLED, x, y, rad, colour)
 
     def gfx_Line(self, x1, y1, x2, y2, colour):
-        buf = self.LINE + self.pack_word(x1) + self.pack_word(y1) + self.pack_word(x2) + self.pack_word(y2) + self.pack_word(colour)
-        return self.write_recv(buf)
+        return self.send_args_ack(self.LINE, x1, y1, x2, y2, colour)
 
     def gfx_BackgroundColour(self, colour):
-        buf = self.BACKGROUND_COLOUR + self.pack_word(colour)
-        return self.write_recv_word(buf)
+        return self.send_args_recv_word(self.BACKGROUND_COLOUR, colour)
 
     def gfx_Contrast(self, contrast):
         """
@@ -142,8 +152,7 @@ class Display(object):
         uLCD-43 supports Contrast values from 1-15 and 0 to turn the Display off.
         """
         contrast &= 15
-        buf = self.CONTRAST + self.pack_word(contrast)
-        return self.write_recv_word(buf)
+        return self.send_args_recv_word(self.CONTRAST, contrast)
 
 
     ####################################################
@@ -179,7 +188,7 @@ class Display(object):
     SLEEP = '\xff\x3b'
 
     def sys_Sleep(self, seconds):
-        return self.write_recv_word(self.SLEEP + self.pack_word(seconds))
+        return self.send_args_recv_word(self.SLEEP, seconds)
 
 
     ###############################
@@ -189,7 +198,7 @@ class Display(object):
     GET_DISPLAY_MODEL = '\x00\x1a'
 
     def sys_GetModel(self):
-        c = self.write_recv_word(self.GET_DISPLAY_MODEL)
+        c = self.send_args_recv_word(self.GET_DISPLAY_MODEL)
         return self.ser.read(c)
 
 

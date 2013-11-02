@@ -382,6 +382,41 @@ class Display(object):
         return self.send_args_recv_word(self.SLEEP, seconds)
 
 
+    ####################################
+    ###  5.8: Touch Screen Commands  ###
+    ####################################
+
+    TOUCH_DETECT_REGION = '\xff\x39'
+    TOUCH_SET = '\xff\x38'
+    TOUCH_SET_MODE_INIT = 0
+    TOUCH_SET_MODE_DISABLE = 1
+    TOUCH_SET_MODE_RESET = 2
+    TOUCH_SET_MODES = ( TOUCH_SET_MODE_INIT, TOUCH_SET_MODE_DISABLE, TOUCH_SET_MODE_RESET, )
+    TOUCH_GET = '\xff\x37'
+    TOUCH_GET_MODE_STATUS = 0
+    TOUCH_GET_MODE_GET_X = 1
+    TOUCH_GET_MODE_GET_Y = 2
+    TOUCH_GET_MODES = ( TOUCH_GET_MODE_STATUS, TOUCH_GET_MODE_GET_X, TOUCH_GET_MODE_GET_Y, )
+    TOUCH_STATUS_INVALID = 0
+    TOUCH_STATUS_NOTOUCH = 0
+    TOUCH_STATUS_PRESS = 1
+    TOUCH_STATUS_RELEASE = 2
+    TOUCH_STATUS_MOVING = 3
+
+    def touch_DetectRegion(self, top_left, bottom_right):
+        return self.send_args_ack(self.TOUCH_DETECT_REGION, top_left[0], top_left[1], bottom_right[0], bottom_right[1])
+
+    def touch_Set(self, mode):
+        if mode not in self.TOUCH_SET_MODES:
+            raise Exception('Mode must be one of TOUCH_SET_MODE_INIT, TOUCH_SET_MODE_DISABLE, TOUCH_SET_MODE_RESET')
+        return self.send_args_ack(self.TOUCH_SET, mode)
+
+    def touch_Get(self, mode):
+        if mode not in self.TOUCH_GET_MODES:
+            raise Exception('Mode must be one of TOUCH_GET_MODE_STATUS, TOUCH_GET_MODE_GET_X, TOUCH_GET_MODE_GET_Y')
+        return self.send_args_recv_word(self.TOUCH_GET, mode)
+
+
     ###############################
     ###  5.10: System Commands  ###
     ###############################

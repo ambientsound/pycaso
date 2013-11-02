@@ -4,7 +4,6 @@ import unittest
 
 import ulcd43pct as lcd
 
-
 class DisplayTestCase(unittest.TestCase):
 
     BLACK = 0
@@ -27,16 +26,62 @@ class DisplayTestCase(unittest.TestCase):
         self.display.gfx_Cls()
         self.display.close()
 
+
+class SysTestCase(DisplayTestCase):
+
+    def testGetModel(self):
+        model = self.display.sys_GetModel()
+        self.assertEqual('uLCD-43', model[:7])
+
+    def testSleep(self):
+        self.assertEqual(self.display.sys_Sleep(2), 0)
+
+    def testSetBaudWait(self):
+        for index, baudrate in self.display.BAUD_RATE_INDEX:
+            if not baudrate in self.display.SUPPORTED_BAUD_RATES:
+                continue
+            self.assertEqual(self.display.setbaudWait(baudrate), True)
+        self.assertEqual(self.display.setbaudWait(self.serial_speed), True)
+
+
+class TouchTestCase(DisplayTestCase):
+
+    def testTouch(self):
+        self.assertTrue(self.display.touch_Set(self.display.TOUCH_SET_MODE_DISABLE))
+        self.assertTrue(self.display.touch_Set(self.display.TOUCH_SET_MODE_INIT))
+        self.assertTrue(self.display.touch_DetectRegion((50, 50), (200, 200)))
+        self.assertTrue(self.display.touch_Set(self.display.TOUCH_SET_MODE_RESET))
+        self.assertEquals(self.display.touch_Get(self.display.TOUCH_GET_MODE_STATUS), self.display.TOUCH_STATUS_NOTOUCH)
+
+    def testYourFinger(self):
+        self.display.touch_Set(self.display.TOUCH_SET_MODE_INIT)
+        self.display.touch_Set(self.display.TOUCH_SET_MODE_RESET)
+        self.display.gfx_BevelWidth(8)
+        self.display.gfx_Button(self.display.BUTTON_STATE_RAISED, (100, 100), self.GREEN, self.BLACK, 0, 3, 4, "Touch me!")
+        max_x = self.display.gfx_Get(self.display.GFX_GET_OBJECT_RIGHT)
+        max_y = self.display.gfx_Get(self.display.GFX_GET_OBJECT_BOTTOM)
+        iterations = 0
+        while self.display.touch_Get(self.display.TOUCH_GET_MODE_STATUS) != self.display.TOUCH_STATUS_PRESS:
+            iterations += 1
+            if iterations > 100:
+                raise Exception('No touch detected, too slow?')
+            time.sleep(0.05)
+        x = self.display.touch_Get(self.display.TOUCH_GET_MODE_GET_X)
+        y = self.display.touch_Get(self.display.TOUCH_GET_MODE_GET_Y)
+        self.display.gfx_CircleFilled((x, y), 20, self.RED)
+        self.assertTrue(100 <= x <= max_x)
+        self.assertTrue(100 <= y <= max_y)
+        time.sleep(0.1)
+
+
+class GfxTestCase(DisplayTestCase):
+
     def testClearScreen(self):
         self.assertEqual(self.display.gfx_Cls(), True)
 
     def testChangeColour(self):
         self.assertTrue(self.display.gfx_ChangeColour(0, 65535))
         self.assertTrue(self.display.gfx_ChangeColour(65535, 0))
-
-    def testGetModel(self):
-        model = self.display.sys_GetModel()
-        self.assertEqual('uLCD-43', model[:7])
 
     def testCircle(self):
         MAX = 240
@@ -250,16 +295,6 @@ class DisplayTestCase(unittest.TestCase):
         self.assertEquals(self.display.gfx_Get(self.display.GFX_GET_OBJECT_TOP), 32000)
         self.assertEquals(self.display.gfx_Get(self.display.GFX_GET_OBJECT_RIGHT), 33536)
         self.assertEquals(self.display.gfx_Get(self.display.GFX_GET_OBJECT_BOTTOM), 33536)
-
-    def testSleep(self):
-        self.assertEqual(self.display.sys_Sleep(2), 0)
-
-    def testSetBaudWait(self):
-        for index, baudrate in self.display.BAUD_RATE_INDEX:
-            if not baudrate in self.display.SUPPORTED_BAUD_RATES:
-                continue
-            self.assertEqual(self.display.setbaudWait(baudrate), True)
-        self.assertEqual(self.display.setbaudWait(self.serial_speed), True)
 
 
 

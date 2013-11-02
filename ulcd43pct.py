@@ -57,6 +57,14 @@ class Display(object):
             return False
         raise Exception("Unknown reply: '%s'" % ack.encode('hex'))
 
+    def send(self, buf):
+        """
+        Write buffer to serial device.
+        """
+        assert self.ser.write(buf) == len(buf)
+        self.ser.flush()
+        return True
+
     def send_ack(self, buf):
         """
         Write buffer to serial device and check for ACK. Throws an exception if ACK is not received.
@@ -72,6 +80,13 @@ class Display(object):
         Return a WORD value from serial.
         """
         return self.unpack_word(self.ser.read(2))
+
+    def send_args(self, *args):
+        """
+        Send the WORDs in args.
+        """
+        buf = ''.join([self.pack_word(x) for x in args])
+        return self.send(buf)
 
     def send_args_ack(self, buf, *args):
         """
@@ -133,8 +148,55 @@ class Display(object):
     TRIANGLE = '\xff\xbf'
     TRIANGLE_FILLED = '\xff\xa9'
     ORBIT = '\x00\x12'
+    PUT_PIXEL = '\xff\xc1'
+    GET_PIXEL = '\xff\xc0'
+    MOVE_TO = '\xff\xcc'
+    LINE_TO = '\xff\xca'
+    CLIPPING = '\xff\xa2'
+    CLIP_WINDOW = '\xff\xb5'
+    SET_CLIP_REGION = '\xff\xb3'
+    ELLIPSE = '\xff\xb2'
+    ELLIPSE_FILLED = '\xff\xb1'
+    BUTTON = '\x00\x11'
+    BUTTON_STATE_DEPRESSED = 0
+    BUTTON_STATE_RAISED = 1
+    PANEL = '\xff\xaf'
+    PANEL_STATE_RECESSED = 0
+    PANEL_STATE_RAISED = 1
+    SLIDER = '\xff\xae'
+    SLIDER_MODE_INDENTED = 0
+    SLIDER_MODE_RAISED = 1
+    SLIDER_MODE_HIDDEN = 2
+    SCREEN_COPY_PASTE = '\xff\xad'
+    BEVEL_SHADOW = '\xff\x98'
+    BEVEL_WIDTH = '\xff\x99'
     BACKGROUND_COLOUR = '\xff\xa4'
+    OUTLINE_COLOUR = '\xff\x9d'
     CONTRAST = '\xff\x9c'
+    FRAME_DELAY = '\xff\x9f'
+    LINE_PATTERN = '\xff\x9b'
+    SCREEN_MODE = '\xff\x9e'
+    SCREEN_MODE_LANDSCAPE = 0
+    SCREEN_MODE_LANDSCAPE_REVERSE = 1
+    SCREEN_MODE_PORTRAIT = 2
+    SCREEN_MODE_PORTRAIT_REVERSE = 3
+    SCREEN_MODES = ( SCREEN_MODE_LANDSCAPE, SCREEN_MODE_LANDSCAPE_REVERSE, SCREEN_MODE_PORTRAIT, SCREEN_MODE_PORTRAIT_REVERSE, )
+    TRANSPARENCY = '\xff\xa0'
+    TRANSPARENT_COLOUR = '\xff\xa1'
+    GFX_SET = '\xff\xce'
+    GFX_SET_OBJECT_COLOUR = 18
+    GFX_SET_PAGE_DISPLAY = 33
+    GFX_SET_PAGE_READ = 34
+    GFX_SET_PAGE_WRITE = 35
+    GFX_SET_OPTIONS = ( GFX_SET_OBJECT_COLOUR, GFX_SET_PAGE_DISPLAY, GFX_SET_PAGE_READ, GFX_SET_PAGE_WRITE, )
+    GFX_GET = '\xff\xa6'
+    GFX_GET_X_MAX = 0
+    GFX_GET_Y_MAX = 1
+    GFX_GET_OBJECT_LEFT = 2
+    GFX_GET_OBJECT_TOP = 3
+    GFX_GET_OBJECT_RIGHT = 4
+    GFX_GET_OBJECT_BOTTOM = 5
+    GFX_GET_OPTIONS = ( GFX_GET_X_MAX, GFX_GET_Y_MAX, GFX_GET_OBJECT_LEFT, GFX_GET_OBJECT_TOP, GFX_GET_OBJECT_RIGHT, GFX_GET_OBJECT_BOTTOM, )
 
     def gfx_Cls(self):
         return self.send_ack(self.CLEAR_SCREEN)
@@ -181,8 +243,80 @@ class Display(object):
         self.send_args_ack(self.ORBIT, angle, distance)
         return struct.unpack('>HH', self.ser.read(4))
 
+    def gfx_PutPixel(self, point, colour):
+        return self.send_args_ack(self.PUT_PIXEL, point[0], point[1], colour)
+
+    def gfx_GetPixel(self, point):
+        return self.send_args_recv_word(self.GET_PIXEL, point[0], point[1])
+
+    def gfx_MoveTo(self, point):
+        return self.send_args_ack(self.MOVE_TO, point[0], point[1])
+
+    def gfx_LineTo(self, point):
+        return self.send_args_ack(self.LINE_TO, point[0], point[1])
+
+    def gfx_Clipping(self, enable):
+        return self.send_args_ack(self.CLIPPING, bool(enable))
+
+    def gfx_ClipWindow(self, top_left, bottom_right):
+        return self.send_args_ack(self.CLIP_WINDOW, top_left[0], top_left[1], bottom_right[0], bottom_right[1])
+
+    def gfx_SetClipRegion(self):
+        return self.send_ack(self.SET_CLIP_REGION)
+
+    def gfx_Ellipse(self, point, xrad, yrad, colour):
+        return self.send_args_ack(self.ELLIPSE, point[0], point[1], xrad, yrad, colour)
+
+    def gfx_EllipseFilled(self, point, xrad, yrad, colour):
+        return self.send_args_ack(self.ELLIPSE_FILLED, point[0], point[1], xrad, yrad, colour)
+
+    def gfx_Button(self, state, point, button_colour, text_colour, font, text_width, text_height, text):
+        if state != self.BUTTON_STATE_DEPRESSED and state != self.BUTTON_STATE_RAISED:
+            raise Exception('State must be BUTTON_STATE_DEPRESSED or BUTTON_STATE_RAISED')
+        if text_width < 1:
+            raise Exception('Text width must be at least 1.')
+        if text_height < 1:
+            raise Exception('Text height must be at least 1.')
+        text += '\x00'
+        self.send(self.BUTTON)
+        self.send_args(state, point[0], point[1], button_colour, text_colour, font, text_width, text_height)
+        return self.send_ack(text)
+
+    def gfx_Panel(self, state, point, width, height, colour):
+        if state != self.PANEL_STATE_RECESSED and state != self.PANEL_STATE_RAISED:
+            raise Exception('State must be PANEL_STATE_RECESSED or PANEL_STATE_RAISED')
+        return self.send_args_ack(self.PANEL, state, point[0], point[1], width, height, colour)
+
+    def gfx_Slider(self, mode, top_left, bottom_right, colour, scale, value):
+        """
+        NOTE: *MISMATCH* in documentation!
+        The LCD panel returns ACK + WORD in response to this command, but the
+        documentation mentions only ACK.  The WORD returned is screen position
+        of the center of the slider thumb, either X position if horizontal
+        slider, or Y position if vertical slider.
+        """
+        if mode not in (self.SLIDER_MODE_INDENTED, self.SLIDER_MODE_RAISED, self.SLIDER_MODE_HIDDEN):
+            raise Exception('State must be one of SLIDE_MODE_INDENTED, SLIDER_MODE_RAISED, SLIDER_MODE_HIDDEN')
+        return self.send_args_recv_word(self.SLIDER, mode, top_left[0], top_left[1], bottom_right[0], bottom_right[1], colour, scale, value)
+
+    def gfx_ScreenCopyPaste(self, source, dest, width, height):
+        return self.send_args_ack(self.SCREEN_COPY_PASTE, source[0], source[1], dest[0], dest[1], width, height)
+
+    def gfx_BevelShadow(self, shadow):
+        if shadow < 0 or shadow > 4:
+            raise Exception('Bevel shadow must be between 0 and 4')
+        return self.send_args_recv_word(self.BEVEL_SHADOW, shadow)
+
+    def gfx_BevelWidth(self, width):
+        if width < 0 or width > 15:
+            raise Exception('Bevel width must be between 0 and 4')
+        return self.send_args_recv_word(self.BEVEL_WIDTH, width)
+
     def gfx_BackgroundColour(self, colour):
         return self.send_args_recv_word(self.BACKGROUND_COLOUR, colour)
+
+    def gfx_OutlineColour(self, colour):
+        return self.send_args_recv_word(self.OUTLINE_COLOUR, colour)
 
     def gfx_Contrast(self, contrast):
         """
@@ -191,6 +325,33 @@ class Display(object):
         """
         contrast &= 15
         return self.send_args_recv_word(self.CONTRAST, contrast)
+
+    def gfx_FrameDelay(self, msec):
+        return self.send_args_recv_word(self.FRAME_DELAY, msec)
+
+    def gfx_LinePattern(self, pattern):
+        return self.send_args_recv_word(self.LINE_PATTERN, pattern)
+
+    def gfx_ScreenMode(self, mode):
+        if not mode in self.SCREEN_MODES:
+            raise Exception('Mode must be one of SCREEN_MODE_LANDSCAPE, SCREEN_MODE_LANDSCAPE_REVERSE, SCREEN_MODE_PORTRAIT, SCREEN_MODE_PORTRAIT_REVERSE')
+        return self.send_args_recv_word(self.SCREEN_MODE, mode)
+
+    def gfx_Transparency(self, mode):
+        return self.send_args_recv_word(self.TRANSPARENCY, bool(mode))
+
+    def gfx_TransparentColour(self, colour):
+        return self.send_args_recv_word(self.TRANSPARENT_COLOUR, colour)
+
+    def gfx_Set(self, mode, value):
+        if mode not in self.GFX_SET_OPTIONS:
+            raise Exception('Mode must be one of GFX_SET_OBJECT_COLOUR, GFX_SET_PAGE_DISPLAY, GFX_SET_PAGE_READ, GFX_SET_PAGE_WRITE')
+        return self.send_args_ack(self.GFX_SET, mode, value)
+
+    def gfx_Get(self, mode):
+        if mode not in self.GFX_GET_OPTIONS:
+            raise Exception('Mode must be one of GFX_GET_X_MAX, GFX_GET_Y_MAX, GFX_GET_OBJECT_LEFT, GFX_GET_OBJECT_TOP, GFX_GET_OBJECT_RIGHT, GFX_GET_OBJECT_BOTTOM')
+        return self.send_args_recv_word(self.GFX_GET, mode)
 
 
     ####################################################

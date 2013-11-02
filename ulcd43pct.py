@@ -5,7 +5,7 @@ class Display(object):
 
     ser = None
     serial_port = None
-    serial_speed = 9600
+    serial_baudrate = 9600
 
     ACK = '\x06'
     ERR = '\x15'
@@ -14,32 +14,24 @@ class Display(object):
     ###  Internal functions  ###
     ############################
 
-    def pack_byte(self, byte):
-        return struct.pack('>B', byte)
-
-    def unpack_byte(self, byte):
-        return struct.unpack('>B', byte)[0]
-
-    def pack_word(self, word):
-        return struct.pack('>H', word)
-
-    def unpack_word(self, word):
-        return struct.unpack('>H', word)[0]
+    def __init__(self, serial_port = None, serial_baudrate = 9600):
+        self.set_serial_port(serial_port)
+        self.set_serial_baudrate(serial_baudrate)
 
     def set_serial_port(self, serial_port):
         self.serial_port = serial_port
 
-    def set_serial_speed(self, serial_speed):
-        self.serial_speed = serial_speed
+    def set_serial_baudrate(self, serial_baudrate):
+        self.serial_baudrate = int(serial_baudrate)
 
-    def detect_serial_speed(self):
+    def detect_serial_baudrate(self):
         self.ser.setTimeout(0)
         for index, rate in self.BAUD_RATE_INDEX:
             self.ser.setBaudrate(rate)
             self.ser.flushInput()
             try:
                 if self.sys_GetModel():
-                    self.serial_speed = rate
+                    self.serial_baudrate = rate
                     return rate
             except:
                 pass
@@ -79,20 +71,20 @@ class Display(object):
         """
         Return a WORD value from serial.
         """
-        return self.unpack_word(self.ser.read(2))
+        return struct.unpack('>H', self.ser.read(2))[0]
 
     def send_args(self, *args):
         """
         Send the WORDs in args.
         """
-        buf = ''.join([self.pack_word(x) for x in args])
+        buf = struct.pack('>'+(len(args)*'H'), *args)
         return self.send(buf)
 
     def send_args_ack(self, buf, *args):
         """
         Send buf along with the WORDs in args, expecting an ACK response.
         """
-        buf += ''.join([self.pack_word(x) for x in args])
+        buf += struct.pack('>'+(len(args)*'H'), *args)
         return self.send_ack(buf)
 
     def send_args_recv_word(self, buf, *args):
@@ -109,7 +101,7 @@ class Display(object):
             raise Exception("Serial port already open.")
         self.ser = serial.Serial(self.serial_port)
         self.ser.open()
-        self.ser.setBaudrate(self.serial_speed)
+        self.ser.setBaudrate(self.serial_baudrate)
         self.ser.setParity('N')
         self.ser.setByteSize(8)
         self.ser.setStopbits(1)
@@ -371,10 +363,10 @@ class Display(object):
             if rate == baudrate:
                 if rate not in self.SUPPORTED_BAUD_RATES:
                     raise Exception('Baud rate is supported by device, but probably not by OS.')
-                self.ser.write(self.SET_BAUD_RATE + self.pack_word(index))
+                self.ser.write(self.SET_BAUD_RATE + struct.pack('>H', index))
                 self.ser.flush()
                 self.ser.setBaudrate(baudrate)
-                self.serial_speed = baudrate
+                self.serial_baudrate = baudrate
                 self.ser.flushInput()
                 return self.get_ack()
         raise Exception("Unsupported baud rate.")
@@ -406,12 +398,10 @@ class Display(object):
 
 if __name__ == "__main__":
     import os
-    d = Display()
-    d.set_serial_port(os.getenv('PYCASO_SERIAL_PORT'))
-    d.set_serial_speed(int(os.getenv('PYCASO_SERIAL_SPEED', 9600)))
+    d = Display(os.getenv('PYCASO_SERIAL_PORT'), os.getenv('PYCASO_SERIAL_BAUDRATE', 9600))
     d.connect()
     try:
-        speed = d.detect_serial_speed()
+        speed = d.detect_serial_baudrate()
         target = 115200
     except:
         print "Device doesn't seem to be responding. Try running detection again."
@@ -421,9 +411,9 @@ if __name__ == "__main__":
         print "Switching to %d baud" % target
         if d.setbaudWait(target):
             print "Device running at %d baud" % speed
-            print "export PYCASO_SERIAL_SPEED=%d" % target
+            print "export PYCASO_SERIAL_BAUDRATE=%d" % target
             exit(0)
         print "Device doesn't seem to be responding. Try running detection again."
         exit(1)
-    print "export PYCASO_SERIAL_SPEED=%d" % target
+    print "export PYCASO_SERIAL_BAUDRATE=%d" % target
     exit(0)

@@ -14,14 +14,12 @@ class DisplayTestCase(unittest.TestCase):
 
     def setUp(self):
         self.serial_port = os.getenv('PYCASO_SERIAL_PORT')
-        self.serial_speed = int(os.getenv('PYCASO_SERIAL_SPEED', 9600))
+        self.serial_baudrate = os.getenv('PYCASO_SERIAL_BAUDRATE', 9600)
         if not self.serial_port:
             raise Exception('Please set the PYCASO_SERIAL_PORT environment variable to run the tests.')
-        if not self.serial_speed:
-            raise Exception('Please set the PYCASO_SERIAL_SPEED environment variable to run the tests.')
-        self.display = lcd.Display()
-        self.display.set_serial_port(self.serial_port)
-        self.display.set_serial_speed(self.serial_speed)
+        if not self.serial_baudrate:
+            raise Exception('Please set the PYCASO_SERIAL_BAUDRATE environment variable to run the tests.')
+        self.display = lcd.Display(self.serial_port, self.serial_baudrate)
         self.display.connect()
 
     def tearDown(self):

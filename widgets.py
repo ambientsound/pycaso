@@ -2,10 +2,13 @@
 UI widget library for the ulcd43pct Display class.
 """
 
+import math
+
 class Widget(object):
     ORIENTATION_SINGLE = 0
     ORIENTATION_HORIZONTAL = 1
     ORIENTATION_VERTICAL = 2
+    ORIENTATION_MATRIX = 3
 
     def __init__(self, **kwargs):
         self.children = []
@@ -59,14 +62,15 @@ class Widget(object):
             raise Exception('Cannot add more than one child to a non-grid widget')
         child.parent = self
         child.display = self.display
+        child.envelope = self.envelope
         self.children.append(child)
         self.mark_dirty()
         self.unfit()
 
     def fit_children(self):
+        self.children_fits = True
         if self.orientation == self.ORIENTATION_SINGLE:
             return
-        self.children_fits = True
         x1, y1, x2, y2 = self.envelope
         if self.orientation == self.ORIENTATION_HORIZONTAL:
             width_per_child = self.width() / len(self.children)
@@ -74,7 +78,12 @@ class Widget(object):
         elif self.orientation == self.ORIENTATION_VERTICAL:
             width_per_child = self.width()
             height_per_child = self.height() / len(self.children)
-        for child in self.children:
+        elif self.orientation == self.ORIENTATION_MATRIX:
+            sq = math.ceil(math.sqrt(len(self.children)))
+            width_per_child = self.width() / sq
+            height_per_child = self.height() / sq
+            y2 = round(y1 + height_per_child)
+        for index, child in enumerate(self.children):
             x = x1
             y = y1
             if self.orientation == self.ORIENTATION_HORIZONTAL:
@@ -83,6 +92,16 @@ class Widget(object):
             elif self.orientation == self.ORIENTATION_VERTICAL:
                 y2 = round(y1 + height_per_child)
                 y1 = y2 + 1
+            elif self.orientation == self.ORIENTATION_MATRIX:
+                x2 = round(x1 + width_per_child)
+                if index % sq == sq - 1:
+                    x1 = self.envelope[0]
+                    y1 = y2 + 1
+                    child.set_envelope((x, y, x2, y2))
+                    y2 = round(y2 + height_per_child)
+                    continue
+                else:
+                    x1 = x2 + 1
             child.set_envelope((x, y, x2, y2))
 
     def width(self):
@@ -116,6 +135,13 @@ class YGrid(Widget):
     def __init__(self, **kwargs):
         super(YGrid, self).__init__(**kwargs)
         self.orientation = self.ORIENTATION_VERTICAL
+
+
+class MatrixGrid(Widget):
+
+    def __init__(self, **kwargs):
+        super(MatrixGrid, self).__init__(**kwargs)
+        self.orientation = self.ORIENTATION_MATRIX
 
 
 class Button(Widget):

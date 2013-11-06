@@ -10,6 +10,7 @@ class DisplayTestCase(unittest.TestCase):
     RED   = 0b11111 << 11
     GREEN = 0b111111 << 5
     BLUE  = 0b11111
+    DIMENSIONS = (480, 272)
 
     def setUp(self):
         self.serial_port = os.getenv('PYCASO_SERIAL_PORT')
@@ -25,6 +26,16 @@ class DisplayTestCase(unittest.TestCase):
         self.display.gfx_BackgroundColour(0)
         self.display.gfx_Cls()
         self.display.close()
+
+
+class AuxTestCase(DisplayTestCase):
+
+    def testDetectDimensions(self):
+        self.assertEquals(-1, self.display.RES_X)
+        self.assertEquals(-1, self.display.RES_Y)
+        self.assertEquals(self.DIMENSIONS, self.display.detect_dimensions())
+        self.assertEquals(self.DIMENSIONS[0], self.display.RES_X)
+        self.assertEquals(self.DIMENSIONS[1], self.display.RES_X)
 
 
 class SysTestCase(DisplayTestCase):

@@ -11,6 +11,9 @@ class Display(object):
     ACK = '\x06'
     ERR = '\x15'
 
+    RES_X = -1
+    RES_Y = -1
+
     ############################
     ###  Internal functions  ###
     ############################
@@ -147,6 +150,17 @@ class Display(object):
         self.ser.close()
         self.ser = None
         return True
+
+
+    ###################################
+    ###  Some helper API functions  ###
+    ###################################
+
+    def detect_dimensions(self):
+        self.RES_X = self.gfx_Get(self.GFX_GET_X_MAX) + 1
+        self.RES_Y = self.gfx_Get(self.GFX_GET_Y_MAX) + 1
+        return (self.RES_X, self.RES_Y)
+
 
 
     #######################################

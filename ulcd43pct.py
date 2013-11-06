@@ -1,3 +1,4 @@
+import os
 import serial
 import struct
 
@@ -32,10 +33,33 @@ class Display(object):
             try:
                 if self.sys_GetModel():
                     self.serial_baudrate = rate
+                    self.ser.setTimeout(5)
                     return rate
             except:
                 pass
         raise Exception('No match in any baud rate')
+
+    @staticmethod
+    def detect_and_set_serial_baudrate():
+        d = Display(os.getenv('PYCASO_SERIAL_PORT'), os.getenv('PYCASO_SERIAL_BAUDRATE', 9600))
+        d.connect()
+        try:
+            speed = d.detect_serial_baudrate()
+            target = 115200
+        except:
+            print "Device doesn't seem to be responding. Try running detection again."
+            return False
+        print "Device running at %d baud" % speed
+        if speed != target:
+            print "Switching to %d baud" % target
+            if d.setbaudWait(target):
+                print "Device running at %d baud" % speed
+                print "export PYCASO_SERIAL_BAUDRATE=%d" % target
+                return True
+            print "Device doesn't seem to be responding. Try running detection again."
+            return False
+        print "export PYCASO_SERIAL_BAUDRATE=%d" % target
+        return True
 
     def get_ack(self):
         """
@@ -105,9 +129,11 @@ class Display(object):
         self.ser.setParity('N')
         self.ser.setByteSize(8)
         self.ser.setStopbits(1)
-        self.ser.setTimeout(5)
         self.ser.flushInput()
         self.ser.flushOutput()
+        self.ser.setTimeout(0)
+        self.ser.read(1024)
+        self.ser.setTimeout(5)
         return True
 
     def reset(self):
@@ -121,6 +147,101 @@ class Display(object):
         self.ser.close()
         self.ser = None
         return True
+
+
+    #######################################
+    ###  5.1: Text and String Commands  ###
+    #######################################
+
+    MOVE_CURSOR = '\xff\xe9'
+    PUT_CH = '\xff\xfe'
+    PUT_STR = '\x00\x18'
+    CHAR_WIDTH = '\x00\x1e'
+    CHAR_HEIGHT = '\x00\x1d'
+    TEXT_FGCOLOUR = '\xff\xe7'
+    TEXT_BGCOLOUR = '\xff\xe6'
+    TXT_FONT_ID = '\xff\xe5'
+    TXT_WIDTH = '\xff\xe4'
+    TXT_HEIGHT = '\xff\xe3'
+    TXT_X_GAP = '\xff\xe2'
+    TXT_Y_GAP = '\xff\xe1'
+    TXT_BOLD = '\xff\xde'
+    TXT_INVERSE = '\xff\xdc'
+    TXT_ITALIC = '\xff\xdd'
+    TXT_OPACITY = '\xff\xdf'
+    TXT_UNDERLINE = '\xff\xdb'
+    TXT_ATTRIBUTES = '\xff\xda'
+    TXT_ATTRIBUTE_BOLD = (1 << 4)
+    TXT_ATTRIBUTE_ITALIC = (1 << 5)
+    TXT_ATTRIBUTE_INVERSE = (1 << 6)
+    TXT_ATTRIBUTE_UNDERLINED = (1 << 7)
+
+    def txt_MoveCursor(self, line, column):
+        return self.send_args_ack(self.MOVE_CURSOR, line, column)
+
+    def putCH(self, character):
+        return self.send_args_ack(self.PUT_CH, ord(character))
+
+    def putStr(self, string):
+        if len(string) > 511:
+            string = string[:511]
+        string += '\0'
+        self.send_ack(self.PUT_STR + string)
+        return self.recv_word()
+
+    def charwidth(self, char):
+        self.send_ack(self.CHAR_WIDTH + struct.pack('>B', ord(char)))
+        return self.recv_word()
+
+    def charheight(self, char):
+        self.send_ack(self.CHAR_HEIGHT + struct.pack('>B', ord(char)))
+        return self.recv_word()
+
+    def txt_FGcolour(self, colour):
+        return self.send_args_recv_word(self.TEXT_FGCOLOUR, colour)
+
+    def txt_BGcolour(self, colour):
+        return self.send_args_recv_word(self.TEXT_BGCOLOUR, colour)
+
+    def txt_FontID(self, id):
+        return self.send_args_recv_word(self.TXT_FONT_ID, id)
+
+    def txt_Width(self, multiplier):
+        return self.send_args_recv_word(self.TXT_WIDTH, multiplier)
+
+    def txt_Height(self, multiplier):
+        return self.send_args_recv_word(self.TXT_HEIGHT, multiplier)
+
+    def txt_Xgap(self, pixelcount):
+        return self.send_args_recv_word(self.TXT_X_GAP, pixelcount)
+
+    def txt_Ygap(self, pixelcount):
+        return self.send_args_recv_word(self.TXT_Y_GAP, pixelcount)
+
+    def txt_Bold(self, mode):
+        mode = bool(mode)
+        return self.send_args_recv_word(self.TXT_BOLD, mode)
+
+    def txt_Inverse(self, mode):
+        mode = bool(mode)
+        return self.send_args_recv_word(self.TXT_INVERSE, mode)
+
+    def txt_Italic(self, mode):
+        mode = bool(mode)
+        return self.send_args_recv_word(self.TXT_ITALIC, mode)
+
+    def txt_Opacity(self, mode):
+        mode = bool(mode)
+        return self.send_args_recv_word(self.TXT_OPACITY, mode)
+
+    def txt_Underline(self, mode):
+        mode = bool(mode)
+        return self.send_args_recv_word(self.TXT_UNDERLINE, mode)
+
+    def txt_Attributes(self, mode):
+        mode = mode & (0b1111 << 4)
+        return self.send_args_recv_word(self.TXT_ATTRIBUTES, mode)
+
 
 
     ################################
@@ -165,6 +286,9 @@ class Display(object):
     BACKGROUND_COLOUR = '\xff\xa4'
     OUTLINE_COLOUR = '\xff\x9d'
     CONTRAST = '\xff\x9c'
+    CONTRAST_OFF = 0
+    CONTRAST_MIN = 1
+    CONTRAST_MAX = 15
     FRAME_DELAY = '\xff\x9f'
     LINE_PATTERN = '\xff\x9b'
     SCREEN_MODE = '\xff\x9e'
@@ -367,7 +491,6 @@ class Display(object):
                 self.ser.flush()
                 self.ser.setBaudrate(baudrate)
                 self.serial_baudrate = baudrate
-                self.ser.flushInput()
                 return self.get_ack()
         raise Exception("Unsupported baud rate.")
 
@@ -427,28 +550,3 @@ class Display(object):
         c = self.send_args_recv_word(self.GET_DISPLAY_MODEL)
         return self.ser.read(c)
 
-
-
-# Detect baud rate and set to max
-
-if __name__ == "__main__":
-    import os
-    d = Display(os.getenv('PYCASO_SERIAL_PORT'), os.getenv('PYCASO_SERIAL_BAUDRATE', 9600))
-    d.connect()
-    try:
-        speed = d.detect_serial_baudrate()
-        target = 115200
-    except:
-        print "Device doesn't seem to be responding. Try running detection again."
-        exit(1)
-    print "Device running at %d baud" % speed
-    if speed != target:
-        print "Switching to %d baud" % target
-        if d.setbaudWait(target):
-            print "Device running at %d baud" % speed
-            print "export PYCASO_SERIAL_BAUDRATE=%d" % target
-            exit(0)
-        print "Device doesn't seem to be responding. Try running detection again."
-        exit(1)
-    print "export PYCASO_SERIAL_BAUDRATE=%d" % target
-    exit(0)

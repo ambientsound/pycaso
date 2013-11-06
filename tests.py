@@ -44,6 +44,87 @@ class SysTestCase(DisplayTestCase):
         self.assertEqual(self.display.setbaudWait(self.serial_speed), True)
 
 
+class TextTestCase(DisplayTestCase):
+
+    def testMoveCursor(self):
+        self.assertTrue(self.display.txt_MoveCursor(0, 0))
+
+    def testPutCh(self):
+        self.assertTrue(self.display.txt_MoveCursor(0, 0))
+        for ch in 'All your base are belong to us':
+            self.assertTrue(self.display.putCH(ch))
+
+    def testPutStr(self):
+        self.assertTrue(self.display.txt_MoveCursor(0, 0))
+        self.assertTrue(self.display.putStr('All your base are belong to us'))
+
+    def testCharWidth(self):
+        self.display.txt_FontID(2)
+        self.assertEquals(8, self.display.charwidth('e'))
+
+    def testCharHeight(self):
+        self.display.txt_FontID(2)
+        self.assertEquals(12, self.display.charheight('e'))
+
+    def testFGColour(self):
+        self.display.txt_FGcolour(self.BLACK)
+        self.assertEquals(self.BLACK, self.display.txt_FGcolour(self.RED))
+
+    def testBGColour(self):
+        self.display.txt_BGcolour(self.BLACK)
+        self.assertEquals(self.BLACK, self.display.txt_BGcolour(self.RED))
+
+    def testFontID(self):
+        self.display.txt_FontID(0)
+        self.assertEquals(0, self.display.txt_FontID(1))
+
+    def testTxtWidth(self):
+        self.display.txt_Width(2)
+        self.assertEquals(2, self.display.txt_Width(1))
+
+    def testTxtHeight(self):
+        self.display.txt_Height(2)
+        self.assertEquals(2, self.display.txt_Height(1))
+
+    def testTxtXGap(self):
+        self.display.txt_Xgap(2)
+        self.assertEquals(2, self.display.txt_Xgap(1))
+
+    def testTxtYGap(self):
+        self.display.txt_Ygap(2)
+        self.assertEquals(2, self.display.txt_Ygap(1))
+
+    def testTxtBold(self):
+        self.display.txt_Bold(True)
+        self.assertEquals(True, self.display.txt_Bold(False))
+
+    def testTxtInverse(self):
+        self.display.txt_Inverse(True)
+        self.assertEquals(True, self.display.txt_Inverse(False))
+
+    def testTxtItalic(self):
+        self.display.txt_Italic(True)
+        self.assertEquals(True, self.display.txt_Italic(False))
+
+    def testTxtOpacity(self):
+        self.display.txt_Opacity(True)
+        self.assertEquals(True, self.display.txt_Opacity(False))
+
+    def testTxtUnderline(self):
+        self.display.txt_Underline(True)
+        self.assertEquals(True, self.display.txt_Underline(False))
+
+    def testTxtAttributes(self):
+        self.display.txt_Attributes(0)
+        modes = [
+                self.display.TXT_ATTRIBUTE_BOLD | self.display.TXT_ATTRIBUTE_INVERSE,
+                self.display.TXT_ATTRIBUTE_ITALIC | self.display.TXT_ATTRIBUTE_UNDERLINED
+                ]
+        self.assertEquals(0, self.display.txt_Attributes(modes[0]))
+        self.assertEquals(modes[0], self.display.txt_Attributes(modes[1]))
+        self.assertEquals(modes[1], self.display.txt_Attributes(0))
+
+
 class TouchTestCase(DisplayTestCase):
 
     def testTouch(self):
